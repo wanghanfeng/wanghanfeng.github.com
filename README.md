@@ -102,3 +102,5 @@ hexo d
 就能将本地文件提交到 GitHub 仓库中，并通过 `http://classTC.github.io` 这个 URL 访问博客
 
 `_config.yml` 配置文件中还有许多对博客的配置，包括 URL，目录等各项配置
+
+原文链接：https://github.com/classTC/classTC.github.io
