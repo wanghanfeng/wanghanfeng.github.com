@@ -1,0 +1,117 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta http-equiv="content-type" content="text/html; charset=utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="description"><title>盘点垃圾回收机制 | 王韩峰的博客</title><link rel="stylesheet" type="text/css" href="//cdn.bootcss.com/normalize/5.0.0/normalize.min.css"><link rel="stylesheet" type="text/css" href="//cdn.bootcss.com/pure/0.6.0/pure-min.css"><link rel="stylesheet" type="text/css" href="//cdn.bootcss.com/pure/0.6.0/grids-responsive-min.css"><link rel="stylesheet" type="text/css" href="/css/style.css?v=0.0.0"><link rel="stylesheet" href="//cdn.bootcss.com/font-awesome/4.7.0/css/font-awesome.min.css"><script type="text/javascript" src="//cdn.bootcss.com/jquery/3.1.1/jquery.min.js"></script><link rel="Shortcut Icon" type="image/x-icon" href="/favicon.ico"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="apple-touch-icon-precomposed" href="/apple-touch-icon.png"></head><body><div class="body_container"><div id="header"><div class="site-name"><h1 class="hidden">盘点垃圾回收机制</h1><a id="logo" href="/.">王韩峰的博客</a><p class="description"></p></div><div id="nav-menu"><a href="/." class="current"><i class="fa fa-home"> 首页</i></a><a href="/archives/"><i class="fa fa-archive"> 归档</i></a><a href="/about/"><i class="fa fa-user"> 关于</i></a></div></div><div id="layout" class="pure-g"><div class="pure-u-1 pure-u-md-3-4"><div class="content_container"><div class="post"><h1 class="post-title">盘点垃圾回收机制</h1><div class="post-meta">Feb 11, 2017<span> | </span><span class="category"><a href="/categories/算法与数据结构/">算法与数据结构</a></span><script src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js" async></script><span id="busuanzi_container_page_pv"> | <span id="busuanzi_value_page_pv"></span><span> Hits</span></span></div><div class="post-content"><h3 id="引用计数基本知识"><a href="#引用计数基本知识" class="headerlink" title="引用计数基本知识"></a>引用计数基本知识</h3><blockquote>
+<p>《Clean Code》一书的作者Bob大叔，曾在一次演讲中提到过，国外有一些程序员是 [Language Oriented Programming] ,什么意思呢？这些程序员根本不挑剔编程语言，管你php,python,java,js,还是ruby，哪个火就用哪个，哪个工资高就转哪个。真相是当你具备相对完善的计算机理论知识体系，并对一门语言有较深的掌握之后，切换到新语言的成本比大多数人想象的要低的多。</p>
+</blockquote>
+<h2 id="系数当前主流语言的垃圾回收机制。"><a href="#系数当前主流语言的垃圾回收机制。" class="headerlink" title="系数当前主流语言的垃圾回收机制。"></a>系数当前主流语言的垃圾回收机制。</h2><table>
+<thead>
+<tr>
+<th style="text-align:center">语言</th>
+<th style="text-align:center">是否面向对象</th>
+<th style="text-align:center">是否有垃圾回收机制</th>
+<th style="text-align:center">机制原理</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">C</td>
+<td style="text-align:center">面向过程</td>
+<td style="text-align:center">无</td>
+<td style="text-align:center">手动管理</td>
+</tr>
+<tr>
+<td style="text-align:center">C++</td>
+<td style="text-align:center">面向对象</td>
+<td style="text-align:center">无</td>
+<td style="text-align:center">手动管理</td>
+</tr>
+<tr>
+<td style="text-align:center">Java</td>
+<td style="text-align:center">面向对象</td>
+<td style="text-align:center">有</td>
+<td style="text-align:center">根搜索算法</td>
+</tr>
+<tr>
+<td style="text-align:center">Python</td>
+<td style="text-align:center">面向对象（并不强制）</td>
+<td style="text-align:center">有</td>
+<td style="text-align:center">引用计数机制</td>
+</tr>
+<tr>
+<td style="text-align:center">JavaScript</td>
+<td style="text-align:center">面向对象</td>
+<td style="text-align:center">有</td>
+<td style="text-align:center">标记清除</td>
+</tr>
+<tr>
+<td style="text-align:center">Ruby</td>
+<td style="text-align:center">面向对象</td>
+<td style="text-align:center">有</td>
+<td style="text-align:center">标记清除</td>
+</tr>
+<tr>
+<td style="text-align:center">Objective-C</td>
+<td style="text-align:center">面向对象</td>
+<td style="text-align:center">有</td>
+<td style="text-align:center">引用计数机制</td>
+</tr>
+<tr>
+<td style="text-align:center">Php</td>
+<td style="text-align:center">面向对象</td>
+<td style="text-align:center">有</td>
+<td style="text-align:center">引用计数机制</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>上表仅仅罗列出一小部分主流语言的垃圾回收机制，’机制原理’只说明该语言主要使用的机制，不代表完全。</p>
+</blockquote>
+<p>拿php来举例：<br>每个php变量存在一个叫”zval”的变量容器中。一个zval变量容器，除了包含变量的类型和值，还包括两个字节的额外信息。第一个是”is_ref”，是个bool值，用来标识这个变量是否是属于引用集合(reference set)。通过这个字节，php引擎才能把普通变量和引用变量区分开来，由于php允许用户通过使用&amp;来使用自定义引用，zval变量容器中还有一个内部引用计数机制，来优化内存使用。第二个额外字节是”refcount”，用以表示指向这个zval变量容器的变量(也称符号即symbol)个数。所有的符号存在一个符号表中，其中每个符号都有作用域(scope)，那些主脚本(比如：通过浏览器请求的的脚本)和每个函数或者方法也都有作用域。</p>
+<p>当一个变量被赋常量值时，就会生成一个zval变量容器，如下例这样<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="php"><span class="meta">&lt;?php</span></span></div><div class="line">$a = <span class="string">"new string"</span>;</div><div class="line"><span class="meta">?&gt;</span></div></pre></td></tr></table></figure></p>
+<p>使用<a href="http://xdebug.org/" target="_blank" rel="external">Xdebug</a>工具调用函数 xdebug_debug_zval()显示”refcount”和”is_ref”的值，<br><figure class="highlight stylus"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="selector-tag">a</span>: (refcount=<span class="number">1</span>, is_ref=<span class="number">0</span>)=<span class="string">'new string'</span></div></pre></td></tr></table></figure></p>
+<p>把一个变量赋值给另一变量将增加引用次数(refcount).<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="php"><span class="meta">&lt;?php</span></span></div><div class="line">$a = <span class="string">"new string"</span>;</div><div class="line">$b = $a;</div><div class="line">xdebug_debug_zval( <span class="string">'a'</span> );</div><div class="line"><span class="meta">?&gt;</span></div></pre></td></tr></table></figure></p>
+<p>上例会输出：<br><figure class="highlight stylus"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="selector-tag">a</span>: (refcount=<span class="number">2</span>, is_ref=<span class="number">0</span>)=<span class="string">'new string'</span></div></pre></td></tr></table></figure></p>
+<p>这时，引用次数是<em>2</em>，因为同一个变量容器被变量 a和变量 b关联。当没必要时，php不会去复制已生成的变量容器。变量容器在”refcount“变成0时就被销毁。当任何关联到某个变量容器的变量离开它的作用域(比如：函数执行结束)，或者对变量调用了函数 <a href="http://php.net/manual/zh/function.unset.php" target="_blank" rel="external">unset()</a>时，”refcount“就会减1，下面的例子就能说明:<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"><span class="php"><span class="meta">&lt;?php</span></span></div><div class="line">$a = <span class="string">"new string"</span>;</div><div class="line">$c = $b = $a;</div><div class="line">xdebug_debug_zval( <span class="string">'a'</span> );</div><div class="line"><span class="keyword">unset</span>( $b, $c );</div><div class="line">xdebug_debug_zval( <span class="string">'a'</span> );</div><div class="line"><span class="meta">?&gt;</span></div></pre></td></tr></table></figure></p>
+<p>上例会输出：<br><figure class="highlight stylus"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"><span class="selector-tag">a</span>: (refcount=<span class="number">3</span>, is_ref=<span class="number">0</span>)=<span class="string">'new string'</span></div><div class="line"><span class="selector-tag">a</span>: (refcount=<span class="number">1</span>, is_ref=<span class="number">0</span>)=<span class="string">'new string'</span></div></pre></td></tr></table></figure></p>
+<p>如果我们现在执行 unset($a);，包含类型和值的这个变量容器就会从内存中删除。</p>
+<blockquote>
+<p>以上内容来自<a href="http://php.net/manual/zh/features.gc.refcounting-basics.php" target="_blank" rel="external">PHP官方参考手册</a></p>
+</blockquote>
+<p>可以看到基于引用计数的垃圾回收机制是通过对象的引用计数器来决定是否进行回收的。</p>
+<p>例如Python：<br><figure class="highlight abnf"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">typedef struct_object &#123;</div><div class="line"> int ob_refcnt<span class="comment">;</span></div><div class="line"> struct_typeobject *ob_type<span class="comment">;</span></div><div class="line">&#125; PyObject<span class="comment">;</span></div></pre></td></tr></table></figure></p>
+<p>每一个python对象都是有一个结构体组成，结构体中的ob_refcnt参数代表当前对象的引用计数，ob_refcnt的值随着新对象对它的引用与否而发生改变，当有一个新对象引用它时，它的ob_refcnt值自加一。当前对象对它不在引用时，它的ob_refcnt值自减一。当ob_refcnt的值减到0时，垃圾回收机制回收内存。</p>
+<p>当一个函数体执行完毕之后，其内部的局部变量引用计数全部清零释放，借用微信小程序的概念：用完即走。省的占着茅坑。。。</p>
+<p>#####优缺点<br>所有具有垃圾回收机制的编程语言并不是只有一种垃圾回收机制，引用计数机制这么简单为什么不全部使用这个机制呢，下面来谈谈引用计数的优缺点。</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">优点</th>
+<th style="text-align:left">缺点</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">1.机制简单 <br> 2.实时性：一旦没有引用，内存就直接释放了。不用像其他机制等到特定时机。实时性还带来一个好处：处理回收内存的时间分摊到了平时，资源利用率较高。</td>
+<td style="text-align:left">1.容易产生循环引用，导致内存泄露  <br> 2.循环引用计数器消耗内存（每个对象内部留一些空间来处理引用计数）<br>3.循环引用计数器消耗资源（不停地更新着众多引用数值。特别是当你不再使用一个大数据结构的时候，比如一个包含很多元素的列表，必须一次性释放大量对象。减少引用数就成了一项复杂的递归过程了）</td>
+</tr>
+</tbody>
+</table>
+<p>循环引用的例子（自己引用自己）：<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="php"><span class="meta">&lt;?php</span></span></div><div class="line">$a = <span class="keyword">array</span>( <span class="string">'one'</span> );</div><div class="line">$a[] =&amp; $a;</div><div class="line">xdebug_debug_zval( <span class="string">'a'</span> );</div><div class="line"><span class="meta">?&gt;</span></div></pre></td></tr></table></figure></p>
+<p>上例会输出：<br><figure class="highlight nix"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">a: (<span class="attr">refcount=2,</span> <span class="attr">is_ref=1)=array</span> (</div><div class="line">   <span class="number">0</span> =&gt; (<span class="attr">refcount=1,</span> <span class="attr">is_ref=0)='one',</span></div><div class="line">   <span class="number">1</span> =&gt; (<span class="attr">refcount=2,</span> <span class="attr">is_ref=1)=...</span></div><div class="line">)</div></pre></td></tr></table></figure></p>
+<p>这时如果让$a指向null,它在内存上的是这样的：<br><figure class="highlight lisp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">(<span class="name">refcount=1</span>, is_ref=1)=array (</div><div class="line">   <span class="number">0</span> =&gt; (<span class="name">refcount=1</span>, is_ref=0)='one',</div><div class="line">   <span class="number">1</span> =&gt; (<span class="name">refcount=1</span>, is_ref=1)=...</div><div class="line">)</div></pre></td></tr></table></figure></p>
+<p>就是说它还有引用，所以内存不会释放，就造成了内存泄露。这件事对于那些大型的服务器程序来说是致命的，因为它们会一直在服务端运行，如果产生微小的内存泄露，日积月累会导致服务器因内存爆满而崩溃。</p>
+<h3 id="标记清除基本知识"><a href="#标记清除基本知识" class="headerlink" title="标记清除基本知识"></a>标记清除基本知识</h3><p>拿Ruby举例：<br>在Ruby中，申请一个对象时，ruby并不会立即向操作系统请求内存，而是在代码开始之前就创建成千上百个对象，在指针将其串联成一个链表</p>
+<p><img src="http://upload-images.jianshu.io/upload_images/2312315-755f0ea5156a8864.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt="Snip20170210_7.png"></p>
+<figure class="highlight crmsh"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">object = <span class="keyword">Node</span>.<span class="title">new</span>('ddd');</div></pre></td></tr></table></figure>
+<p>当程序申请一个对象时，链表就将头结点释放出来，（绿色代表已分配，蓝色代表未分配）<br><img src="http://upload-images.jianshu.io/upload_images/2312315-de97b084c7112603.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt="Snip20170210_9.png"></p>
+<p>当程序多次调用下面同一条语句时，会得到多个对象，并且之前申请的对象不会释放，就是所谓的垃圾<br><figure class="highlight crmsh"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">object = <span class="keyword">Node</span>.<span class="title">new</span>('ddd');</div></pre></td></tr></table></figure></p>
+<p><img src="http://upload-images.jianshu.io/upload_images/2312315-3b87b7c04d7b0365.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt="Snip20170210_10.png"></p>
+<p>总会有一个时刻，使得ruby预先申请好的对象空间使用完毕，这时如果再申请对象，就会没有空间，而此时此刻内存中装的是一堆没有用的垃圾，亟待释放。ruby的解决方式是，将程序暂停下来，并开始轮询所有的指针、变量和代码产生别的引用对象和其他值，在内存中不在使用的空间标记为M。<br><img src="http://upload-images.jianshu.io/upload_images/2312315-1fc8045593f4383a.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt="Snip20170210_11.png"></p>
+<p>之后再将那些可以释放的空间用指针的形式串接成一个可用链表，为下一分配做准备。</p>
+<p><img src="http://upload-images.jianshu.io/upload_images/2312315-87ae5e2c5b868877.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt="Snip20170210_12.png"></p>
+<p>不同的标记清除法采用类似的方法，在垃圾回收机制的时机选择上可能会有不同。Ruby的垃圾回收机制已经53岁高龄了。</p>
+<h3 id="根搜索算法"><a href="#根搜索算法" class="headerlink" title="根搜索算法"></a>根搜索算法</h3><blockquote>
+<p>以下内容出自<a href="http://www.jianshu.com/p/5261a62e4d29" target="_blank" rel="external"> 浅析JAVA的垃圾回收机制（GC）</a></p>
+</blockquote>
+<p>首先了解一个概念：<strong><em>根集(Root Set)</em></strong><br>    所谓根集(Root Set)就是正在执行的Java程序可以访问的引用变量（注意：不是对象）的集合(包括局部变量、参数、类变量)，程序可以使用引用变量访问对象的属性和调用对象的方法。<br>    这种算法的基本思路：<br> （1）通过一系列名为“GC Roots”的对象作为起始点，寻找对应的引用节点。<br>（2）找到这些引用节点后，从这些节点开始向下继续寻找它们的引用节点。<br> （3）重复（2）。<br> （4）搜索所走过的路径称为引用链，当一个对象到GC Roots没有任何引用链相连时，就证明此对象是不可用的。<br>    Java和C#中都是采用根搜索算法来判定对象是否存活的。<br><strong><em>标记可达对象：</em></strong><br>    JVM中用到的所有现代GC算法在回收前都会先找出所有仍存活的对象。根搜索算法是从离散数学中的图论引入的，程序把所有的引用关系看作一张图。下图3.0中所展示的JVM中的内存布局可以用来很好地阐释这一概念：<br><img src="http://upload-images.jianshu.io/upload_images/2312315-e3214b8c2d7bcafb.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt="">图 3.0 标记（marking）对象</p>
+<p>  首先，垃圾回收器将某些特殊的对象定义为GC根对象。所谓的GC根对象包括：<br>（1）虚拟机栈中引用的对象（栈帧中的本地变量表）；<br>（2）方法区中的常量引用的对象；<br>（3）方法区中的类静态属性引用的对象；<br>（4）本地方法栈中JNI（Native方法）的引用对象。<br>（5）活跃线程。<br>    接下来，垃圾回收器会对内存中的整个对象图进行遍历，它先从GC根对象开始，然后是根对象引用的其它对象，比如实例变量。回收器将访问到的所有对象都标记为存活。<br>    存活对象在上图中被标记为蓝色。当标记阶段完成了之后，所有的存活对象都已经被标记完了。其它的那些（上图中灰色的那些）也就是GC根对象不可达的对象，也就是说你的应用不会再用到它们了。这些就是垃圾对象，回收器将会在接下来的阶段中清除它们。<br><strong><em>关于标记阶段有几个关键点是值得注意的：</em></strong><br>    （1）开始进行标记前，需要先暂停应用线程，否则如果对象图一直在变化的话是无法真正去遍历它的。暂停应用线程以便JVM可以尽情地收拾家务的这种情况又被称之为安全点（Safe Point），这会触发一次Stop The World(STW)暂停。触发安全点的原因有许多，但最常见的应该就是垃圾回收了。<br>    （2）暂停时间的长短并不取决于堆内对象的多少也不是堆的大小，而是存活对象的多少。因此，调高堆的大小并不会影响到标记阶段的时间长短。<br>    （3）在根搜索算法中，要真正宣告一个对象死亡，至少要经历两次标记过程：<br>      1.如果对象在进行根搜索后发现没有与GC Roots相连接的引用链，那它会被第一次标记并且进行一次筛选。筛选的条件是此对象是否有必要执行 finalize（）方法（可看作析构函数，类似于OC中的dealloc，Swift中的deinit）。当对象没有覆盖finalize（）方法，或finalize（）方法已经被虚拟机调用过，虚拟机将这两种情况都视为没有必要执行。<br>      2.如果该对象被判定为有必要执行finalize（）方法，那么这个对象将会被放置在一个名为F-Queue队列中，并在稍后由一条由虚拟机自动建立的、低优先级的Finalizer线程去执行finalize（）方法。finalize（）方法是对象逃脱死亡命运的最后一次机会（因为一个对象的finalize（）方法最多只会被系统自动调用一次），稍后GC将对F-Queue中的对象进行第二次小规模的标记，如果要在finalize（）方法中成功拯救自己，只要在finalize（）方法中让该对象重新引用链上的任何一个对象建立关联即可。而如果对象这时还没有关联到任何链上的引用，那它就会被回收掉。<br>     （4）实际上GC判断对象是否可达看的是强引用。<br>    当标记阶段完成后，GC开始进入下一阶段，删除不可达对象。<br><strong><em>4.回收垃圾对象内存的算法</em></strong><br><strong><em>4.1 Tracing算法（Tracing Collector） 或 标记—清除算法</em></strong><br>    标记—清除算法是最基础的收集算法，为了解决引用计数法的问题而提出。它使用了根集的概念，它分为“标记”和“清除”两个阶段：首先标记出所需回收的对象，在标记完成后统一回收掉所有被标记的对象，它的标记过程其实就是前面的根搜索算法中判定垃圾对象的标记过程。<br>    优点：不需要进行对象的移动，并且仅对不存活的对象进行处理，在存活对象比较多的情况下极为高效。<br>      缺点：（1）<strong><em>标记和清除过程的效率都不高。</em></strong>（这种方法需要使用一个空闲列表来记录所有的空闲区域以及大小。对空闲列表的管理会增加分配对象时的工作量。如图4.1所示。）。（2）<strong><em>标记清除后会产生大量不连续的内存碎片。</em></strong>虽然空闲区域的大小是足够的，但却可能没有一个单一区域能够满足这次分配所需的大小，因此本次分配还是会失败（在Java中就是一次OutOfMemoryError）不得不触发另一次垃圾收集动作。如图4.2所示。<br>算法示意图：<br><img src="http://upload-images.jianshu.io/upload_images/2312315-5fa967b219ad13ba.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt="">图 4.0  标记—清除算法</p>
+<p><img src="http://upload-images.jianshu.io/upload_images/2312315-7f6bb6d1695694a2.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt=""></p>
+<h2 id="gt-欢迎各位大神批评指正，感激不尽！喜欢就给我颗❤️吧。"><a href="#gt-欢迎各位大神批评指正，感激不尽！喜欢就给我颗❤️吧。" class="headerlink" title="&gt;欢迎各位大神批评指正，感激不尽！喜欢就给我颗❤️吧。"></a>&gt;欢迎各位大神批评指正，感激不尽！喜欢就给我颗❤️吧。</h2></div><script type="text/javascript" src="/js/share.js?v=0.0.0" async></script><a data-url="http://wanghanfeng.com/2017/02/11/盘点垃圾回收/" data-id="ciz2blosk00000hu2retgqb2k" class="article-share-link">分享到</a><div class="tags"><a href="/tags/王韩峰/">王韩峰</a></div><div class="post-nav"><a href="/2017/02/10/网络请求缓存之无网络/" class="next">网络请求缓存之无网络</a></div></div></div></div><div class="pure-u-1-4 hidden_mid_and_down"><div id="sidebar"><div class="widget"><form action="//www.google.com/search" method="get" accept-charset="utf-8" target="_blank" class="search-form"><input type="text" name="q" maxlength="20" placeholder="Search"/><input type="hidden" name="sitesearch" value="http://wanghanfeng.com"/></form></div><div class="widget"><div class="widget-title"><i class="fa fa-folder-o"> 分类</i></div><ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/Web/">Web</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/iOS/">iOS</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/iOS-iTunes/">iOS iTunes</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/服务器搭建/">服务器搭建</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/算法与数据结构/">算法与数据结构</a></li></ul></div><div class="widget"><div class="widget-title"><i class="fa fa-star-o"> 标签</i></div><div class="tagcloud"><a href="/tags/王韩峰/" style="font-size: 15px;">王韩峰</a></div></div><div class="widget"><div class="widget-title"><i class="fa fa-file-o"> 最新文章</i></div><ul class="post-list"><li class="post-list-item"><a class="post-list-link" href="/2017/02/11/盘点垃圾回收/">盘点垃圾回收机制</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/02/10/网络请求缓存之无网络/">网络请求缓存之无网络</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/02/09/搭建一个新闻客户端服务器/">搭建一个新闻客户端服务器</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/01/09/使用github搭建个人博客/">使用github搭建个人博客</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/12/20/使用运行时runtime来调用私有方法/">使用运行时runtime来调用私有方法</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/12/20/使用CocoaPods导入第三方框架/">使用CocoaPods导入第三方框架 </a></li><li class="post-list-item"><a class="post-list-link" href="/2016/12/19/AFNetworking-3-0-POST请求的一个坑/">AFNetworking 3.0 POST请求的一个坑</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/12/17/使用类别构造RadioButton/">使用类别构造RadioButton</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/12/16/由于苹果更新开发者程序许可协议导致问题的解决方案/">由于苹果更新开发者程序许可协议导致问题的解决方案</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/02/18/iOS-两行代码解决数据持久化/">iOS 两行代码解决数据持久化</a></li></ul></div><div class="widget"><div class="widget-title"><i class="fa fa-external-link"> 友情链接</i></div></div></div></div><div class="pure-u-1 pure-u-md-3-4"><div id="footer">© <a href="/." rel="nofollow">王韩峰的博客.</a> Powered by<a rel="nofollow" target="_blank" href="https://hexo.io"> Hexo.</a><a rel="nofollow" target="_blank" href="https://github.com/tufu9441/maupassant-hexo"> Theme</a> by<a rel="nofollow" target="_blank" href="https://github.com/pagecho"> Cho.</a></div></div></div><a id="rocket" href="#top" class="show"></a><script type="text/javascript" src="/js/totop.js?v=0.0.0" async></script><script type="text/javascript" src="//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.pack.js" async></script><script type="text/javascript" src="/js/fancybox.js?v=0.0.0" async></script><link rel="stylesheet" type="text/css" href="/css/jquery.fancybox.css?v=0.0.0"><script type="text/javascript" src="/js/codeblock-resizer.js?v=0.0.0"></script><script type="text/javascript" src="/js/smartresize.js?v=0.0.0"></script></div></body></html>
